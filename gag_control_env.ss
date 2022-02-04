@@ -77,7 +77,7 @@
 	0.01	3	0.359275	0.359275	99	0	-1	203	0	0	0	0	0	0	#	NatM_p_3_Fem_GP_1
 	0.01	3	0.302298	0.302298	99	0	-1	204	0	0	0	0	0	0	#	NatM_p_4_Fem_GP_1
 	0.01	3	0.264651	0.264651	99	0	-1	205	0	0	0	0	0	0	#	NatM_p_5_Fem_GP_1
-	0.01	3	0.181219	0.181219	99	0	-1	206	0	0	0	0	0	0	#	NatM_p_6_Fem_GP_1
+	0.01	3	0.205768	0.205768	99	0	-1	206	0	0	0	0	0	0	#	NatM_p_6_Fem_GP_1
 #	Sex:	1	BioPattern:	1	Growth												
 	10	40	29.0811	27.9528	0.8	1	3	0	0	0	0	0	0	0	#	L_at_Amin_Fem_GP_1	
 	80	160	127.773	132.152	0.8	1	3	0	0	0	0	0	0	0	#	L_at_Amax_Fem_GP_1	
@@ -104,14 +104,13 @@
 #
 #_no	timevary	MG	parameters													
 #_	LO	HI	INIT	PRIOR	PR_SD	PR_type	PHASE									
-	0.1	2	1	0.649136	0.3	0	4	#	NatM_break_1_Fem_GP_1_ENV_add_constr							
-	0.1	2	1	0.455041	0.3	0	4	#	NatM_break_2_Fem_GP_1_ENV_add_constr							
-	0.1	2	1	0.359275	0.3	0	4	#	NatM_break_3_Fem_GP_1_ENV_add_constr							
-	0.1	2	1	0.302298	0.3	0	4	#	NatM_break_4_Fem_GP_1_ENV_add_constr							
-	0.1	2	1	0.264651	0.3	0	4	#	NatM_break_5_Fem_GP_1_ENV_add_constr							
-	0.1	2	1	0.238042	0.3	0	4	#	NatM_break_6_Fem_GP_1_ENV_add_constr							
+	0.1	2	1	1	0.3	0	4	#	NatM_break_1_Fem_GP_1_ENV_add_constr							
+	0.1	2	1	1	0.3	0	4	#	NatM_break_2_Fem_GP_1_ENV_add_constr							
+	0.1	2	1	1	0.3	0	4	#	NatM_break_3_Fem_GP_1_ENV_add_constr							
+	0.1	2	1	1	0.3	0	4	#	NatM_break_4_Fem_GP_1_ENV_add_constr							
+	0.1	2	1	1	0.3	0	4	#	NatM_break_5_Fem_GP_1_ENV_add_constr							
+	0.1	2	1	1	0.3	0	4	#	NatM_break_6_Fem_GP_1_ENV_add_constr							
 #
-#_seasonal_effects_on_biology_parms
 #_seasonal_effects_on_biology_parms
  0 0 0 0 0 0 0 0 0 0 #_femwtlen1,femwtlen2,mat1,mat2,fec1,fec2,Malewtlen1,malewtlen2,L1,K
 #_ LO HI INIT PRIOR PR_SD PR_type PHASE
@@ -121,7 +120,7 @@
 0  # 0/1 to use steepness in initial equ recruitment calculation
 0  #  future feature:  0/1 to make realized sigmaR a function of SR curvature
 #_          LO            HI          INIT         PRIOR         PR_SD       PR_type      PHASE    env-var    use_dev   dev_mnyr   dev_mxyr     dev_PH      Block    Blk_Fxn #  parm_name
-             1            40       9.48029            10            10             1          1          0          0          0          0          0          0          0 # SR_LN(R0)
+             1            40       9.48029            10            10             0          1          0          0          0          0          0          0          0 # SR_LN(R0)
            0.2             1         0.855          0.68             1             1         -1          0          0          0          0          0          0          0 # SR_BH_steep
              0             2          0.21           0.6             1             0         -4          0          0          0          0          0          0          0 # SR_sigmaR
             -5             5             0             0            10             0         -1          0          0          0          0          0          0          0 # SR_regime
@@ -237,7 +236,7 @@
 #
 #_          LO            HI          INIT         PRIOR         PR_SD       PR_type      PHASE    env-var    use_dev   dev_mnyr   dev_mxyr     dev_PH      Block    Blk_Fxn  #  parm_name
 # 1   FISHERY LenSelex
-            20            80            60            50            30             1         2          0          0          0          0          0          0          0  #  SizeSel_P1_FISHERY(1)
+            20            80            60            50            30             1         4          0          0          0          0          0          0          0  #  SizeSel_P1_FISHERY(1)
              0             1      0.558469           0.4             1             1          4          0          0          0          0          0          0          0  #  SizeSel_P2_FISHERY(1)
            -15            15      -2.03924          -2.5             10             1          4          0          0          0          0          0          0          0  #  SizeSel_P3_FISHERY(1)
            -15            15      0.213142             5             10             1          4          0          0          0          0          0          0          0  #  SizeSel_P4_FISHERY(1)
@@ -245,8 +244,8 @@
 #           -15            15      -2.03924          -2.5             2             1          4          0          0          0          0          0          0          0  #  SizeSel_P3_FISHERY(1)
 #           -15            15      0.213142             5             2             1          4          0          0          0          0          0          0          0  #  SizeSel_P4_FISHERY(1)
 # 2   SURVEY1 LenSelex
-#            19            70        36.653            30          0.01             1          2          0          0          0          0          0          0          0  #  Size_inflection_SURVEY1(2)
-#          0.01            60       6.59179            10          0.01             1          3          0          0          0          0          0          0          0  #  Size_95%width_SURVEY1(2)
+#            19            70        36.653            30          10             1          2          0          0          0          0          0          0          0  #  Size_inflection_SURVEY1(2)
+#          0.01            60       6.59179            10          10             1          3          0          0          0          0          0          0          0  #  Size_95%width_SURVEY1(2)
 # 3   SURVEY2 LenSelex
 # 1   FISHERY AgeSelex
 #             0            40             0             5            99             0        -99          0          0          0          0          0          0          0  #  minage@sel=1_FISHERY(1)
