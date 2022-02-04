@@ -1,0 +1,13 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: SS_Mgag repository
+message: Please cite this software using these metadata.
+type: dataset
+authors:
+  - given-names: Vilas
+    name-particle: Daniel
+    email: danielvilasgonzalez@gmail.com
+    affiliation: University of Florida
+    orcid: 'https://orcid.org/0000-0002-2099-8280'
