@@ -1,0 +1,87 @@
+Parameter.file.supplied.to.the.command.line.of.EcospaceConsole
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+FORMAT
+Coma delimited Parameter file for EcospaceConsole.
+Lines that do not start with a recognised TAG will be ignored.
+Recognized TAG's need to be braced with a closing and opening angle brackets
+If an expected TAG is not found, it was missing or there is a typo, the varible will be left at the database value and a waring will be written to the console window.
+The first three columns contain data in the format, TAG, Value, Variable Type, comments can be added in the forth column.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TAG =  ECOSPACE_ENVIRONMENTAL_RESPONSE_STRING
+Response function enumerators 
+use to set the response function type in 
+ Public Enum eShapeFunctionType As Long
+        Computed = -1
+        NotSet = 0 (FreeHand)
+        Linear = 1
+        Sigmoid_Legacy = 2
+        Hyperbolic = 3
+        Exponential = 4
+        Betapdf = 5
+        Normal = 6
+        RightShoulder = 7
+        LeftShoulder = 8
+        Trapezoid = 9
+        Sigmoid = 10
+        Logistic4Params = 11
+    End Enum
+'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TAG = MODEL_RUN_TYPE
+Enumerator for type of EwE Run    
+Public Enum eModelTypes As Integer
+    NotSet = 0
+    Ecospace = 1
+    NGOMEXEcospace = 2
+    EcospaceMonteCarlo = 3
+    Ecosim = 4
+End Enum
+'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TAG,DATA,Variable Type, Comments
+<MODEL_RUN_TYPE>, 1, System.Int32, Type of run 1 is a normal Ecospace Run, 2 is NGOMEX scenarios, 3 is Ecospace MonteCarlo
+Inputs model and spatail temporal config
+<EWE_MODEL_FILE>, C:/WFS EwE/age structure ecospace/WFS EwE 2.09 chapter3/WFS EwE 2.09 chapter3.eweaccdb, System.String
+<SPATIAL_CONFIG_FILE>, C:/WFS EwE/age structure ecospace/WFS EwE 2.09 chapter3/chapter3_PhD.xml, System.String
+<N_ECOSPACE_TIMESTEPS_YEAR>, 12, System.Int32
+<N_ECOSPACE_YEARS>, 36, System.Int32, Run length in years
+<N_BIOMASS_THREADS>, 6, System.Int32, number of thread to run trophic model on
+<N_GRID_THREADS>, 6, System.Int32, number of thread to run movement on
+<N_EFFORT_DIST_THREADS>, 6, System.Int32, number of thread to run fishing effort distribution on
+Scenarios and Ecospace run type
+<ECOSPACE_SCENARIO_INDEX>, 1, System.Int32
+<ECOSIM_SCENARIO_INDEX>, 2, System.Int32
+<SPATIAL_ENABLED>, True, System.Boolean, Use the spatial temporal framework
+<ECOSPACE_USE_IBM>, True, System.Boolean
+<ECOSPACE_USE_MULTISTANZA>, False, System.Boolean
+Output and saving
+<ECOSPACE_USE_CORE_OUPUT_DIR>, False, System.Boolean
+<ECOSPACE_USE_ANNUAL_OUTPUT>, False, System.Boolean, Output monthly maps and spatially averaged .csv files
+<ECOSPACE_OUTPUT_DIR>, C:/WFS EwE/age structure ecospace/outputs/, System.String
+<ECOSPACE_SAVE_AVERAGED_BIOMASS>, True, System.Boolean, Save the spatially averaged biomass .csv file (time series)
+<ECOSPACE_SAVE_MAP_BIOMASS>, True, System.Boolean
+<MO_SAVE_MAP_BIOMASS>, False, System.Boolean
+<ECOSPACE_FIRST_OUTPUT_TIMESTEP>, 1, System.Int32
+ECOSPACE_ENVIRONMENTAL_RESPONSE format  eShapeFunctionType 1-11, Shape index from the Ecospace environmental responses interface, Function parameters from the Change Shape dialogue(in the same order as they appear in the UI grid)
+<ECOSPACE_ENVIRONMENTAL_RESPONSE_STRING>, , System.String
+<ECOSPACE_USE_SPINUP>, True, System.Boolean
+<ECOSPACE_SPINUP_LENGTH>, 2, System.Int32
+Eco Indicators Plugin Config
+<ECOINDICATORS_SAVE_ECOSPACE>, False, System.Boolean, True will save all the indicators to file. There is no fine grained manipulation of variable
+<ECOINDICATORS_SAVE_ANNUAL>, False, System.Boolean, True will save annual file only. These are not the annually averaged values, it's a single value taken from the 12 month of the year. 
+Ecospace Dispersal and Vulnerabilities
+ECOSPACE_DISPERSAL_RATE array of dispersal rates in group order. There is no group index, it assumes they are in the same order as the groups.
+        If the array has fewer values than the groups it will just set the dispersal rates for part of the groups.
+//<ECOSPACE_DISPERSAL_RATE>,  300 300 300 300 300 300 300 50 50 500 100 10 10 300 300 1, System.Single[]
+ECOSIM_VULNERABILITIES_BY_PRED Sets the vulnerability multiplier for a predator/column in the vulnerabilities grid.
+        Format Predator_group_index vulnerability e.g. 1 999 would set all the vulnerabilities for predator group 1 to 999
+        Can be use to clear out existing vulnerabilities before setting individual values by prey pred index
+ECOSIM_VULNERABILITIES_BY_PREY_PRED Sets vulnerabilities for a single prey and predator, prey index first
+        Format prey index first then predator then vulnerability  e.g. 10 1 999 would set the vulnerabilities of group 10 to predator group 1 to 999
+//<ECOSIM_VULNERABILITIES_BY_PREY_PRED>, , System.Single[]
+IBM Threading 
+N_IBM_MOVEMENT_THREADS number of threads to run the IBM movement on. This will default to number of cores on the system.
+<N_IBM_MOVEMENT_THREADS>,8, System.Int32, number of thread to run IBM movement on
+ECOSPACE_SAVE_THREAD_LOG Save the thread timing log in the same directory as the model. This will be the model name with _log_ThreadTiming.txt appended.
+<ECOSPACE_SAVE_THREAD_LOG>,True, System.Boolean
+<IBM_SAVE_AGE_STRUCTURE>, True, System.Boolean, True to save the IBM age structure file
