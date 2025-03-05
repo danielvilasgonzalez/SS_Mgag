@@ -1022,7 +1022,7 @@ for (region in c('1','2','All')) {
   df.mrt1.annual$se<-df.mrt2$se
   
   #palette
-  pal <- wes_palette("Zissou1", 6, type = "continuous")
+  pal <- wesanderson::wes_palette("Zissou1", 6, type = "continuous")
   
   #plot MRT
   tiff(filename = './outputs/mrt3.tif',res = 250,width = 2200,height = 1200)
@@ -1045,6 +1045,36 @@ for (region in c('1','2','All')) {
           legend.title = element_blank(),legend.spacing.y = unit(0, "lines"))
   dev.off()
   
+  
+  ragg::agg_png('./figures/MRT_age_uncertainty.png',  width = 8, height = 5, units = "in", res = 300)
+  ggplot(data = df.mrt1.annual, aes(x = yr, y = value, color = age)) +
+    geom_line(linewidth = 1, alpha = 0.7) +  # Main line plot
+    geom_ribbon(aes(ymin = value - se, ymax = value + se, fill = age), alpha = 0.3,color=NA) +  # Uncertainty ribbon
+    theme_bw() +
+    scale_x_continuous(
+      breaks = c(1990, 1995, 2000, 2005, 2010, 2015,2020),
+      minor_breaks = c(1985:2020),
+      expand = c(0, 0)) +
+    #scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) +
+    scale_color_manual(values = pal) +
+    scale_fill_manual(values = pal) +  # Use the same color palette for fill
+    xlab('Year') +
+    ylab(expression(paste("MRT (", year^{-1}, ')'))) +
+    theme(
+      text = element_text(size = 12),
+      axis.title.x = element_blank(),
+      axis.text.x =element_text(angle=30,hjust=1,vjust=1),
+      #plot.margin = unit(c(1, 1, 1, 1), "lines"),
+      #legend.key = element_rect(fill = NA, colour = NA),
+      #panel.border = element_rect(fill = NA, colour = 'black'),
+      panel.grid.minor = element_line(linetype = 'dashed'),
+      legend.position = 'none',#c(0.1, 0.77),
+      #legend.background = element_rect(color = "black", fill = NA),
+      legend.title = element_blank(),strip.background = element_rect(fill='white'))+
+    facet_wrap(~age)
+  dev.off()
+  
+  
   #scaled function
   scale_value<- function(x){
     (x-mean(x,na.rm=TRUE))/sd(x)
@@ -1052,6 +1082,11 @@ for (region in c('1','2','All')) {
   
   #scale
   df.mrt1.annual$scaled<-scale_value(df.mrt1.annual$value)
+  
+  
+  #save
+  write.csv2(df.mrt1.annual,file='./tables/mrt_annual.csv')
+  
   
   #selected severe years
   sev_yrs<-unique(df.mrt1.annual[which(df.mrt1.annual$scaled>=1),'yr'])
@@ -1089,10 +1124,13 @@ for (region in c('1','2','All')) {
           legend.title = element_blank(),legend.spacing.y = unit(0, "lines"))
   dev.off()
   
+  
+  
+  
   #build MRT for all ages and years  
   mrt5<-df.mrt1.annual[which(df.mrt1.annual$age=='gag 5 plus'),]
   mrt5$age<-'gag 5'
-  mrt51<-bind_rows(replicate(length(6:32),mrt5, simplify=FALSE))
+  mrt51<-dplyr::bind_rows(replicate(length(6:32),mrt5, simplify=FALSE))
   mrt51$age<-rep(paste0('gag',c(6:32)),each=length(1985:2020))
   
   #append
@@ -1134,7 +1172,7 @@ for (region in c('1','2','All')) {
   }
   
   #modify year
-  yr<-substrRight(yr, 4)
+  yr<-1985:2020
   
   #txt file
   df.mrt333<-data.frame('yr'=ifelse(round(df.mrt22$value,5)!=0,yr,paste0('#',yr)),
@@ -1200,12 +1238,12 @@ for (region in c('1','2','All')) {
   ################
   #Yr Variable Value (gag red tide mortality rates) 
   #Z-transformation
-  levels(df.mrt1$variable)<-c(1:6)
-  df.mrt1$variable<-as.numeric(df.mrt1$variable)
-  df.mrt1$value<-scale(as.numeric(df.mrt1$value))
-   
-  
-  df.mrt1<-rbind(df.mrt1,c(-9999,0,0))
+  levels(df.mrt1.annual$age)<-c(1:6)
+  df.mrt1.annual$age<-as.numeric(df.mrt1.annual$age)
+  #z-scored
+  df.mrt1.annual$value<-(df.mrt1.annual$value)/mean(df.mrt1.annual$value)
+  df.mrt1.annual$value<-round(df.mrt1.annual$value,digits=3)
+  df.mrt1<-rbind(df.mrt1.annual[,c("yr","age","value")],c(-9999,0,0))
   write.table(df.mrt1, 
               file = "./outputs/mrt_as_env.txt", sep = "\t",
               row.names = FALSE,
@@ -1452,4 +1490,15 @@ for (region in c('1','2','All')) {
     facet_wrap(~age)
   
   
+
+  
+  
+  #####plot mrt with uncertainty
+  
+  
+  x <- read.delim('./tables/mrt_at_age_blk.txt', header = FALSE)
+  head(x)
+  
+  data.frame(mean=x$V3,
+             se=x$V5) #sqrt(12)
 
