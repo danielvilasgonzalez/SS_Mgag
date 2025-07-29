@@ -151,21 +151,39 @@ for (imodel in names(Mycomparisonlist)) {
   
   #imodel<-names(Mycomparisonlist)[1]
   
-  m<-Mycomparisonlist[[imodel]]
+  # Extract model data
+  m <- Mycomparisonlist[[imodel]]
   
-  rmse<-ss3diags::SSplotJABBAres(ss3rep = m)
+  # Clean and fix m$cpue dataframe
+  cpue_clean <- m$cpue
+  colnames(cpue_clean) <- as.character(unlist(cpue_clean[1, ]))  # Use first row as header
+  cpue_clean <- cpue_clean[-1, ]                                # Remove first row
+  m$cpue <- cpue_clean
+  m$cpue$Obs <- as.numeric(m$cpue$Obs)
+  m$cpue$Exp <- as.numeric(m$cpue$Exp)
+  m$cpue$Time <- as.numeric(m$cpue$Yr)
   
-  df_diag[which(df_diag$models==imodel),'RMSE_nearshore']<-rmse$RMSE.perc[1]
-  df_diag[which(df_diag$models==imodel),'RMSE_offshore']<-rmse$RMSE.perc[2]
+  # Calculate RMSE with SSplotJABBAres
+  rmse <- ss3diags::SSplotJABBAres(ss3rep = m)
   
+  # Store RMSE values in diagnostics dataframe
+  df_diag[df_diag$models == imodel, c('RMSE_nearshore', 'RMSE_offshore')] <- rmse$RMSE.perc[1:2]
   
-  ind_data<-Mycomparisonsummary$indices[which(Mycomparisonsummary$indices$name==imodel),]
+  # Extract and clean ind_data from summary for this model
+  ind_data <- Mycomparisonsummary$indices[Mycomparisonsummary$indices$name == imodel, ]
+  colnames(ind_data) <- as.character(unlist(ind_data[1, ]))  # Set header from first row
+  ind_data <- ind_data[-1, ]                                 # Remove header row
+  ind_data$Obs <- as.numeric(ind_data$Obs)
+  ind_data$Exp <- as.numeric(ind_data$Exp)
+  ind_data$Time <- as.numeric(ind_data$Yr)
   
-  residuals_adult<-ind_data[which(ind_data$Fleet_name=='SURVEYADULT'),'Dev']
-  residuals_juv<-ind_data[which(ind_data$Fleet_name=='SURVEYJUVENILE'),'Dev']
-  df_diag[which(df_diag$models==imodel),'p_value_nearshore']<-randtests::runs.test(residuals_juv)$p.value
-  df_diag[which(df_diag$models==imodel),'p_value_offshore']<-randtests::runs.test(residuals_adult)$p.value
+  # Extract residuals and convert to numeric
+  residuals_juv_num <- as.numeric(as.character(ind_data$Dev[ind_data$Fleet_name == 'SURVEYJUVENILE']))
+  residuals_adult_num <- as.numeric(as.character(ind_data$Dev[ind_data$Fleet_name == 'SURVEYADULT']))
   
+  # Calculate and store p-values from runs.test
+  df_diag[df_diag$models == imodel, 'p_value_nearshore'] <- randtests::runs.test(residuals_juv_num)$p.value
+  df_diag[df_diag$models == imodel, 'p_value_offshore'] <- randtests::runs.test(residuals_adult_num)$p.value
   
 }
 
@@ -217,6 +235,24 @@ ggplot()+
 #df_subset <- subset(df, grepl("SURVEY", Label))
 
 df<-Mycomparisonsummary$indices
+
+# Extract first row as header
+new_header <- as.character(unlist(df[1, ]))
+
+# Fix last two column names manually (adjust names as needed)
+new_header[length(new_header)-1] <- "name"
+new_header[length(new_header)] <- "imodel"
+
+# Assign fixed header as colnames
+colnames(df) <- new_header
+
+# Remove the first row now that it’s used as header
+df <- df[-1, ]
+
+#numeric
+df$Obs <- as.numeric(df$Obs)
+df$Exp <- as.numeric(df$Exp)
+
 df$obs_est2<-(df$Obs-df$Exp)^2
 
 out<-data.frame(matrix(NA,nrow=0,ncol = 4))
@@ -644,33 +680,90 @@ quantsSD_df<-subset(quantsSD_df,Label %in% c(paste0('SSB_',1985:2020),
 
 quants<-cbind(quants_df,'SD'=quantsSD_df$value)
 
-quants1<-rbind(recdevs_df,quants)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+
+# Assuming recdevs_df and quants are ready and have columns: Label, Yr, variable, value, SD, Observed (if joined)
+
+# Combine data frames (use bind_rows for safety)
+quants1 <- bind_rows(recdevs_df, quants)
+
+# Set factor levels for 'variable' (once)
+quants1$variable <- factor(quants1$variable, levels = c(
+  'fixed', 'env.add', 'env.mul',
+  'blk.add.all','blk.add.sev',
+  'blk.add3.all','blk.add3.sev',
+  'pred.all','pred.sev',
+  'bycatch.all','bycatch.sev',
+  'bycatchF.all','bycatchF.sev'
+))
+
+# Rename factor levels for 'variable'
+levels(quants1$variable) <- c(
+  'fixed', 'env_add', 'env_mul',
+  'blk_all', 'blk_sev',
+  'blk3_all', 'blk3_sev',
+  'pred_all', 'pred_sev',
+  'bycatch_all', 'bycatch_sev',
+  'bycatchF_all', 'bycatchF_sev'
+)
+
+# Clean Label by removing year suffix "_YYYY"
+quants1$Label <- gsub('_\\d{4}', '', quants1$Label)
+
+# Set factor levels for Label to control plotting order
+quants1$Label <- factor(quants1$Label, levels = c(
+  "Main_RecrDev",
+  "Recr",
+  "SPRratio",
+  "SSB",
+  "SURVEYJUVENILE",
+  "SURVEYADULT",
+  "F"
+))
+
+# Subset survey data for ratio calculation
+quants2 <- subset(quants1, Label %in% c('SURVEYJUVENILE','SURVEYADULT'))
+quants2$ratio <- quants2$value / quants2$SD
+
+# Facet labels for nicer plot labels
+facet_labels <- c(
+  "Main_RecrDev" = "Recruitment deviations",
+  "SSB" = "SSB",
+  "Recr" = "Recruits",
+  "SPRratio" = "SPR Ratio",
+  "F" = "Fishing Mortality (F)",
+  "SURVEYJUVENILE" = "Nearshore Survey",
+  "SURVEYADULT" = "Offshore Survey"
+)
+
 
 #sort levels
 quants1$variable<-factor(quants1$variable,levels = c('fixed',
-                                           'env.add','env.mul',
-                                           'blk.add.all','blk.add.sev','blk.add3.all','blk.add3.sev',
-                                           'pred.all','pred.sev',
-                                           'bycatch.all','bycatch.sev',
-                                           'bycatchF.all','bycatchF.sev'))
+                                                     'env.add','env.mul',
+                                                     'blk.add.all','blk.add.sev','blk.add3.all','blk.add3.sev',
+                                                     'pred.all','pred.sev',
+                                                     'bycatch.all','bycatch.sev',
+                                                     'bycatchF.all','bycatchF.sev'))
 
 # Set the levels first
 quants1$variable <- factor(quants1$variable, levels = c('fixed', 
-                                              'env.add', 'env.mul', 
-                                              'blk.add.all','blk.add.sev',
-                                              'blk.add3.all', 'blk.add3.sev', 
-                                              'pred.all', 'pred.sev', 
-                                              'bycatch.all', 'bycatch.sev', 
-                                              'bycatchF.all', 'bycatchF.sev'))
+                                                        'env.add', 'env.mul', 
+                                                        'blk.add.all','blk.add.sev',
+                                                        'blk.add3.all', 'blk.add3.sev', 
+                                                        'pred.all', 'pred.sev', 
+                                                        'bycatch.all', 'bycatch.sev', 
+                                                        'bycatchF.all', 'bycatchF.sev'))
 
 # Assign new names to the factor levels
 levels(quants1$variable) <- c('fixed', 
-                         'env_add', 'env_mul', 
-                         'blk_all',  'blk_sev',
-                         'blk3_all', 'blk3_sev', 
-                         'pred_all', 'pred_sev', 
-                         'bycatch_all', 'bycatch_sev', 
-                         'bycatchF_all', 'bycatchF_sev')
+                              'env_add', 'env_mul', 
+                              'blk_all',  'blk_sev',
+                              'blk3_all', 'blk3_sev', 
+                              'pred_all', 'pred_sev', 
+                              'bycatch_all', 'bycatch_sev', 
+                              'bycatchF_all', 'bycatchF_sev')
 
 quants1$Label<-gsub('_\\d{4}','',quants1$Label)
 #quants1<-subset(quants1,Label %in% c('SSB','SPRratio','Recr','Main_RecrDev','F'))
@@ -696,9 +789,104 @@ quants1$Label<-factor(quants1$Label,levels = c(  "Main_RecrDev" ,
                                                  "SURVEYJUVENILE" ,
                                                  "SURVEYADULT","F"  ))
 
+quants1 <- quants1 %>%
+  mutate(
+    predicted_backtrans = ifelse(Label %in% c("SURVEYJUVENILE", "SURVEYADULT"),
+                                 exp(value),   # back-transform only surveys
+                                 value)        # keep others unchanged
+  )
+
+
+# Create a new data frame for observed points with aesthetics to appear in legend
+observed_points <- quants1 %>% 
+  filter(!is.na(Observed)) %>%
+  mutate(variable = "Observed")  # Assign a new 'variable' factor for observed points
+
+# Add Observed to factor levels of variable for proper legend handling
+quants1$variable <- factor(quants1$variable, levels = c(levels(quants1$variable), "Observed"))
+observed_points$variable <- factor(observed_points$variable, levels = levels(quants1$variable))
+
+quants1 <- quants1 %>%
+  mutate(
+    SD_real = ifelse(Label %in% c("SURVEYJUVENILE", "SURVEYADULT"),
+                     predicted_backtrans * sqrt(exp(SD^2) - 1),
+                     SD)  # Keep original SD for non-survey data
+  )
+
+# Example plot: Value and Observed over Years faceted by Label, colored by variable
+ggplot() +
+  geom_line(data=quants1, aes(y=predicted_backtrans, x=Yr, color=variable, group=interaction(variable,Label))) +
+  geom_ribbon(
+    data = quants1,
+    aes(
+      ymin = predicted_backtrans - SD_real,
+      ymax = predicted_backtrans + SD_real,
+      x = Yr,
+      fill = variable,
+      group = interaction(variable, Label)
+    ),
+    alpha = 0.2
+  )+
+  geom_point(data = quants1 %>% filter(!is.na(Observed)),
+             aes(x = Yr, y = Observed, color = "Observed", shape = "Observed"),
+             size = 1.5, alpha = 0.7) +
+  
+  scale_color_manual(
+    values = c(
+      'fixed' = 'black',
+      'env_add' = '#01AD2C', 'env_mul' = '#6FBD84',
+      'blk_all' = '#B30101', 'blk3_all' = '#E66000', 'blk_sev' = '#C25460', 'blk3_sev' = '#E09353',
+      'pred_all' = '#BC9912', 'pred_sev' = '#DECE8B',
+      'bycatch_all' = '#154ABD', 'bycatch_sev' = '#6DA4C2',
+      'bycatchF_all' = '#7A29E5', 'bycatchF_sev' = '#8A5FC1',
+      'Observed' = 'black'  # observed points
+    ),
+    name = 'Assessment model'
+  ) +
+  
+  scale_shape_manual(
+    values = c('Observed' = 16),
+    name = ''
+  )+
+  theme_bw() +
+  labs(y = "") +
+  scale_color_manual(
+    values = c(
+      'fixed' = 'black',
+      'env_add' = '#01AD2C', 'env_mul' = '#6FBD84',
+      'blk_all' = '#B30101', 'blk3_all' = '#E66000', 'blk_sev' = '#C25460', 'blk3_sev' = '#E09353',
+      'pred_all' = '#BC9912', 'pred_sev' = '#DECE8B',
+      'bycatch_all' = '#154ABD', 'bycatch_sev' = '#6DA4C2',
+      'bycatchF_all' = '#7A29E5', 'bycatchF_sev' = '#8A5FC1'
+    ),
+    name = 'Assessment model'
+  ) +
+  scale_fill_manual(
+    values = c(
+      'fixed' = 'black',
+      'env_add' = '#01AD2C', 'env_mul' = '#6FBD84',
+      'blk_all' = '#B30101', 'blk3_all' = '#E66000', 'blk_sev' = '#C25460', 'blk3_sev' = '#E09353',
+      'pred_all' = '#BC9912', 'pred_sev' = '#DECE8B',
+      'bycatch_all' = '#154ABD', 'bycatch_sev' = '#6DA4C2',
+      'bycatchF_all' = '#7A29E5', 'bycatchF_sev' = '#8A5FC1'
+    ),
+    name = 'Assessment model'
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    legend.position = c(0.7, 0.15),
+    strip.background = element_rect(fill = 'white'),
+    text = element_text(size = 12)
+  ) +
+  facet_wrap(~Label, scales = 'free_y', nrow = 3, labeller = labeller(Label = facet_labels)) +
+  guides(color = guide_legend(ncol = 3), fill = guide_legend(ncol = 3))
+
+
+
+
 
 #plot
-p<-
+#p<-
 ggplot()+
   #geom_point(size=1)+
   #geom_point(data=quants1,aes(y=value,x=Yr,color=variable,group=interaction(variable,Label)))+
@@ -735,6 +923,117 @@ print(
   p
 )
 dev.off()
+
+
+
+m<-Mycomparisonlist$fixed
+
+# Clean and fix m$cpue dataframe
+cpue_clean <- m$cpue
+colnames(cpue_clean) <- as.character(unlist(cpue_clean[1, ]))  # Use first row as header
+cpue_clean <- cpue_clean[-1, ]                                # Remove first row
+m$cpue <- cpue_clean
+m$cpue$Obs <- as.numeric(m$cpue$Obs)
+m$cpue$Exp <- as.numeric(m$cpue$Exp)
+m$cpue$Time <- as.numeric(m$cpue$Yr)
+
+# Example observed values for recruitment and biomass
+obs_bio <- data.frame(
+  Label = paste0("SSB_", m$recruit$Yr),
+  Yr = m$recruit$Yr,
+  Observed = m$recruit$SpawnBio  # or replace with actual observed biomass
+)
+
+obs_rec <- data.frame(
+  Label = paste0("Recr_", m$recruit$Yr),
+  Yr = m$recruit$Yr,
+  Observed = m$recruit$pred_recr  # or actual observed recruitment if available
+)
+
+obs_f <- data.frame(
+  Label = paste0("F_", m$timeseries$Yr),
+  Yr = m$timeseries$Yr,
+  Observed = m$timeseries$F  # fishing mortality
+)
+
+# Survey observed data
+survey_obs <- data.frame(
+  Label = paste0("SURVEY", m$cpue$Fleet, "_", m$cpue$Yr),
+  Yr = m$cpue$Yr,
+  Observed = m$cpue$Obs
+)
+
+survey_obs$Label <- ifelse(m$cpue$Fleet_name == 'SURVEYJUVENILE',
+                           paste0("SURVEYJUVENILE_", m$cpue$Yr),
+                           paste0("SURVEYADULT_", m$cpue$Yr))
+
+# Combine observed data into one dataframe
+obs_quants <- rbind(obs_bio, obs_rec, obs_f, survey_obs)
+
+obs_quants$Yr <- as.numeric(obs_quants$Yr)
+
+
+# Join the Observed values into your quants dataframe by Label and Yr
+library(dplyr)
+quants <- quants %>%
+  left_join(obs_quants %>% select(Label, Yr, Observed), by = c("Label", "Yr"))
+
+# Remove Observed and SD columns if they exist in quants_df
+quants_df$Observed <- NULL
+quants_df$SD <- NULL
+
+# Extract unique observed values by Label and Yr
+obs_unique <- unique(obs_quants[, c("Label", "Yr", "Observed")])
+
+# Merge observed values by Label and Yr into quants_df
+quants_df_obs <- merge(quants_df, obs_unique, by = c("Label", "Yr"), all.x = TRUE)
+
+# Add SD column from quantsSD_df (make sure it aligns row-wise)
+quants <- cbind(quants_df_obs, SD = quantsSD_df$value)
+
+# Prepare recdevs_df: add Observed = NA and reorder columns to match quants
+recdevs_df$Observed <- NA
+recdevs_df <- recdevs_df[, c("Label", "Yr", "variable", "value", "Observed", "SD")]
+
+# Combine recdevs and quants for plotting
+quants1 <- rbind(recdevs_df, quants)
+
+# Plot
+library(ggplot2)
+
+ggplot() +
+  geom_line(data = quants1, aes(y = value, x = Yr, color = variable, group = interaction(variable, Label))) +
+  geom_ribbon(data = quants1, aes(ymin = value - SD, ymax = value + SD, x = Yr, fill = variable, group = interaction(variable, Label)), alpha = 0.2) +
+  #geom_point(data = quants1, aes(x = Yr, y = Observed, shape = variable, group = interaction(variable, Label)), color = "black", size = 1.5) +
+  theme_bw() +
+  labs(y = '') +
+  scale_color_manual(values = c(
+    'fixed' = 'black',
+    'env_add' = '#01AD2C', 'env_mul' = '#6FBD84',
+    'blk_all' = '#B30101', 'blk3_all' = '#E66000',
+    'blk_sev' = '#C25460', 'blk3_sev' = '#E09353',
+    'pred_all' = '#BC9912', 'pred_sev' = '#DECE8B',
+    'bycatch_all' = '#154ABD', 'bycatch_sev' = '#6DA4C2',
+    'bycatchF_all' = '#7A29E5', 'bycatchF_sev' = '#8A5FC1'
+  ), name = 'Assessment model') +
+  scale_fill_manual(values = c(
+    'fixed' = 'black',
+    'env_add' = '#01AD2C', 'env_mul' = '#6FBD84',
+    'blk_all' = '#B30101', 'blk3_all' = '#E66000',
+    'blk_sev' = '#C25460', 'blk3_sev' = '#E09353',
+    'pred_all' = '#BC9912', 'pred_sev' = '#DECE8B',
+    'bycatch_all' = '#154ABD', 'bycatch_sev' = '#6DA4C2',
+    'bycatchF_all' = '#7A29E5', 'bycatchF_sev' = '#8A5FC1'
+  ), name = 'Assessment model') +
+  theme(
+    axis.title.x = element_blank(),
+    legend.position = c(0.7, 0.15),
+    strip.background = element_rect(fill = 'white'),
+    text = element_text(size = 12)
+  ) +
+  facet_wrap(~Label, scales = 'free_y', nrow = 3, labeller = labeller(Label = facet_labels)) +
+  guides(color = guide_legend(ncol = 3), fill = guide_legend(ncol = 3))
+
 
 #####################
 # Index
